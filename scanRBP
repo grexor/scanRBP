@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+
+from Bio import motifs
+import math
+import os
+import sys
+import argparse
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas
+import matplotlib as mpl
+import glob
+import argparse
+from pathlib import Path
+import pybio
+
+scanRBP_path = Path(__file__).parent.absolute()
+
+
+CLIP_data = {}
+#CLIP_data["tardbp"] = pybio.data.Bedgraph("CLIP_data/eCLIP_tdp43_bedgraph.bed")
+def read_CLIP():
+    f = open("eCLIP_data/metadata.tsv", "rt")
+    header = f.readline().replace("\r", "").replace("\n", "").split("\t")
+    r = f.readline()
+    while r:
+        r = r.replace("\r", "").replace("\n", "").split("\t")
+        data = dict(zip(header, r))
+        if data["File format"]=="bed narrowPeak":
+            fbase = data["File accession"]
+            fbed = f"eCLIP_data/{fbase}.bed"
+            protein = data["Experiment target"].replace("-human", "")
+            cell_type = data["Biosample term name"]
+            CLIP_data[(cell_type, protein)] = pybio.data.Bed(f"CLIP_data/{fbed}")
+        r = f.readline()
+    f.close()
+
+help_0 = """
+Usage for single sequence: scanRBP sequence output [options]
+     * one sequence provided on the command line, generates output.png/pdf + output.tab
+
+Usage for processing FASTA file: scanRBP filename.fasta [options]
+     * one heatmap/matrix will be generated per sequence
+     * output name of the files will be sequence ids provided in the fasta file
+
+Options:
+     -annotate               Annotate each heatmap cell with the number
+     -xlabels                Display sequence (x-labels), default False
+     -only_protein TARDBP    Only analyze binding for the specific protein / search by name
+     -all_protein TARDBP     Additionally to one motif per protein (for all proteins), also include all motifs (PWMs) for this specific protein (search by name)
+                             (note that one protein can have several PWMs)
+     -figsize "(10,20)"      Change matplotlib/seaborn figure size for the heatmap, example width=10, height=20
+     -heatmap title          Make heatmap (png+pdf) with title
+     -output_folder folder   Store all results to the output folder (default: current folder)
+     -nonzero                All negative vector values are set to 0, not enabled by default
+     -CLIP                   Use actual CLIP data, do not use PWM
+"""
+
+parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, add_help=False)
+parser.add_argument('action', help="action(s) to run", nargs='*')
+parser.add_argument("-help", "-h", "--help", action="store_true")
+parser.add_argument("-annotate", "--annotate", action="store_true", default=False)
+parser.add_argument("-xlabels", "--xlabels", action="store_true", default=False)
+parser.add_argument("-only_protein", "--only_protein", default=False)
+parser.add_argument("-all_protein", "--all_protein", default=False)
+parser.add_argument("-figsize", "--figsize", default=False)
+parser.add_argument("-title", "--title", default=False)
+parser.add_argument("-matrix", "--matrix", action="store_true", default=True)
+parser.add_argument("-CLIP", "--CLIP", action="store_true", default=False)
+parser.add_argument("-nonzero", "--nonzero", action="store_true", default=False)
+parser.add_argument("-heatmap", "--heatmap", default=False)
+parser.add_argument("-output_folder", "--output_folder", default=".")
+
+args = parser.parse_args()
+
+if len(args.action) not in [1,2] or args.help:
+    print(help_0)
+    sys.exit(1)
+
+if args.only_protein!=False:
+    files = glob.glob(f"{scanRBP_path}/eCLIP_PWM/*{args.only_protein}*.mat")
+else:
+    files = glob.glob(f"{scanRBP_path}/eCLIP_PWM/*.00.mat")
+if args.all_protein!=False:
+    files = files + glob.glob(f"{scanRBP_path}/eCLIP_PWM/*{args.all_protein}*.mat")
+
+db_motifs = {}
+for fname in files:
+    record = motifs.parse(open(fname), "TRANSFAC", strict=False)
+    try:
+        motif = record[0]
+        motif.pseudocounts = 3
+        pssm = motif.pwm.log_odds()
+        if motif["ID"].find("HNRNPC")!=-1:
+            continue
+        db_motifs[motif["ID"]] = pssm
+    except:
+        pass
+
+def process(seq, output_fname):
+    heatmap_data = []
+    heatmap_columns = []
+
+    for motif_id, pssm in db_motifs.items():
+        scores = pssm.calculate(seq)
+        scores = [x if x!=-math.inf else 0 for x in scores]
+        if args.nonzero:
+            scores = [x if x>=0 else 0 for x in scores]
+        if len(scores)<len(seq):
+            scores = scores + [0] * (len(seq)-len(scores))
+        heatmap_data.append(scores)
+        heatmap_columns.append(motif_id)
+
+    for index, data in enumerate(heatmap_data):
+        assert(len(seq)==len(data))
+
+    heatmap_rows = list(seq)
+    basename = output_fname.replace(".png", "").replace(".pdf", "")
+    data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
+    data.to_csv(args.output_folder+"/"+basename+"_PWM.tab", sep="\t")
+
+    if args.heatmap!=False:
+        plt.figure()
+        sns.set(font="Arial")
+        sns.set(font_scale=0.4)
+        sns.set_style("dark")
+        sns.set_style("ticks")
+
+        rdgn = sns.diverging_palette(h_neg=130, h_pos=10, s=99, l=55, sep=3, as_cmap=True)
+        optional_params = {"linewidths":0.0}
+        optional_params["col_cluster"] = False
+        optional_params["annot"] = args.annotate
+        optional_params["center"] = 0
+        optional_params["fmt"] = ".0f"
+        optional_params["yticklabels"] = True
+        optional_params["xticklabels"] = args.xlabels
+        optional_params["cmap"] = rdgn
+        optional_params["cbar_pos"] = None
+
+        if args.figsize!=False:
+            optional_params["figsize"] = eval(args.figsize)
+        fig = sns.clustermap(data, **optional_params)
+        fig.ax_col_dendrogram.set_visible(False)
+
+        plt.title(args.heatmap)
+        plt.tight_layout() 
+        plt.savefig(args.output_folder+"/"+basename+".png", dpi=300)
+        plt.savefig(args.output_folder+"/"+basename+".pdf")
+        plt.close()
+
+def process_CLIP(chr, strand, start, stop, output_fname):
+    heatmap_data = []
+    heatmap_columns = []
+    scores = CLIP_data["tardbp"].get_vector(chr, strand, start, stop)
+    heatmap_data.append(scores)
+    heatmap_columns.append("K562.TARDBP.0")
+    heatmap_rows = list(range(start, stop+1))
+    if strand=="-":
+        heatmap_rows.reverse()
+    basename = output_fname.replace(".png", "").replace(".pdf", "")
+    data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
+    data.to_csv(args.output_folder+"/"+basename+"_CLIP.tab", sep="\t")
+
+if args.action[0].lower().endswith(".fasta") or args.action[0].lower().endswith(".fa"):
+    import pybio
+    data = pybio.data.Fasta(args.action[0])
+    while data.read():
+        id = data.id.lstrip(" ")
+        id = id.split(" ")[0].replace("+", "plus").replace("-", "minus")
+        id_records = id.replace("plus", "+").replace("minus", "-").split("_")
+        chrstrand, start, stop = "_".join(id_records[:-2]), id_records[-2], id_records[-1] # chr name can have _ inside
+        start, stop = int(start), int(stop)
+        chr, strand = chrstrand[:-1], chrstrand[-1]
+        seq = data.sequence
+        # TODO
+        #process_CLIP(chr, strand, start, stop, id)
+        process(seq, id)
+else:
+    process(args.action[0], args.action[1])
