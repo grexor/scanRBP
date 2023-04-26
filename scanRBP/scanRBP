@@ -7,15 +7,19 @@ import sys
 import argparse
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
 import pandas
-import matplotlib as mpl
 import glob
 import argparse
 from pathlib import Path
 import pybio
+import gzip
+import scanRBP
 
 scanRBP_path = Path(__file__).parent.absolute()
+
+scanRBP.config.init()
 
 CLIP_data = {}
 #CLIP_data["tardbp"] = pybio.data.Bedgraph("CLIP_data/eCLIP_tdp43_bedgraph.bed")
@@ -57,7 +61,7 @@ Options:
 """
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, add_help=False)
-parser.add_argument('action', help="action(s) to run", nargs='*')
+parser.add_argument('commands', help="command(s) to run", nargs='*')
 parser.add_argument("-help", "-h", "--help", action="store_true")
 parser.add_argument("-annotate", "--annotate", action="store_true", default=False)
 parser.add_argument("-xlabels", "--xlabels", action="store_true", default=False)
@@ -70,38 +74,50 @@ parser.add_argument("-CLIP", "--CLIP", action="store_true", default=False)
 parser.add_argument("-nonzero", "--nonzero", action="store_true", default=False)
 parser.add_argument("-heatmap", "--heatmap", default=False)
 parser.add_argument("-output_folder", "--output_folder", default=".")
+parser.add_argument("-version", "--version", help="Print version", action="store_true")
 
 args = parser.parse_args()
 
-if len(args.action) not in [1,2] or args.help:
+print(f"[scanRBP] v{scanRBP.version}, https://github.com/grexor/scanRBP")
+print(f"[scanRBP] data folder: {scanRBP.config.data_folder}")
+print()
+
+if args.version:
+    sys.exit(0)
+
+if len(args.commands) not in [1,2] or args.help:
     print(help_0)
-    sys.exit(1)
+    sys.exit(0)
 
-if args.only_protein!=False:
-    files = glob.glob(f"{scanRBP_path}/eCLIP_PWM/*{args.only_protein}*.mat")
-else:
-    files = glob.glob(f"{scanRBP_path}/eCLIP_PWM/*.00.mat")
-if args.all_protein!=False:
-    files = files + glob.glob(f"{scanRBP_path}/eCLIP_PWM/*{args.all_protein}*.mat")
+# converts BED files to bedGraph files (eCLIP datasets)
+def bed_bedgraph(fname_in, fname_out):
+    fin = gzip.open(fname_in)
+    fout = gzip.open(fname_out, "wb")
+    return
 
-db_motifs = {}
-for fname in files:
-    record = motifs.parse(open(fname), "TRANSFAC", strict=False)
-    try:
-        motif = record[0]
-        motif.pseudocounts = 3
-        pssm = motif.pwm.log_odds()
-        if motif["ID"].find("HNRNPC")!=-1:
-            continue
-        db_motifs[motif["ID"]] = pssm
-    except:
-        pass
+def make_bedgraph():
+    files = glob.glob("../data/CLIP_bed/*.bed.gz")
+    print(files)
+
+def process_CLIP(chr, strand, start, stop, output_fname):
+    heatmap_data = []
+    heatmap_columns = []
+    scores = CLIP_data["tardbp"].get_vector(chr, strand, start, stop)
+    heatmap_data.append(scores)
+    heatmap_columns.append("K562.TARDBP.0")
+    heatmap_rows = list(range(start, stop+1))
+    if strand=="-":
+        heatmap_rows.reverse()
+    basename = output_fname.replace(".png", "").replace(".pdf", "")
+    data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
+    data.to_csv(args.output_folder+"/"+basename+"_CLIP.tab", sep="\t")
+
 
 def process(seq, output_fname):
     heatmap_data = []
     heatmap_columns = []
 
-    for motif_id, pssm in db_motifs.items():
+    for motif_id, pssm in scanRBP.pwm.database.items():
         scores = pssm.calculate(seq)
         scores = [x if x!=-math.inf else 0 for x in scores]
         if args.nonzero:
@@ -148,32 +164,32 @@ def process(seq, output_fname):
         plt.savefig(args.output_folder+"/"+basename+".pdf")
         plt.close()
 
-def process_CLIP(chr, strand, start, stop, output_fname):
-    heatmap_data = []
-    heatmap_columns = []
-    scores = CLIP_data["tardbp"].get_vector(chr, strand, start, stop)
-    heatmap_data.append(scores)
-    heatmap_columns.append("K562.TARDBP.0")
-    heatmap_rows = list(range(start, stop+1))
-    if strand=="-":
-        heatmap_rows.reverse()
-    basename = output_fname.replace(".png", "").replace(".pdf", "")
-    data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
-    data.to_csv(args.output_folder+"/"+basename+"_CLIP.tab", sep="\t")
+if len(args.commands)>0:
 
-if args.action[0].lower().endswith(".fasta") or args.action[0].lower().endswith(".fa"):
-    import pybio
-    data = pybio.data.Fasta(args.action[0])
-    while data.read():
-        id = data.id.lstrip(" ")
-        id = id.split(" ")[0].replace("+", "plus").replace("-", "minus")
-        id_records = id.replace("plus", "+").replace("minus", "-").split("_")
-        chrstrand, start, stop = "_".join(id_records[:-2]), id_records[-2], id_records[-1] # chr name can have _ inside
-        start, stop = int(start), int(stop)
-        chr, strand = chrstrand[:-1], chrstrand[-1]
-        seq = data.sequence
-        # TODO
-        #process_CLIP(chr, strand, start, stop, id)
-        process(seq, id)
-else:
-    process(args.action[0], args.action[1])
+    if args.commands[0]=="config":
+        if len(args.commands)>1:
+            scanRBP.config.change(args.commands[1]) # pybio config genome_folder
+        else:
+            scanRBP.config.change() # ask for genome folder
+        sys.exit(0)
+
+    scanRBP.pwm.init(args)
+
+    if args.commands[0].lower().endswith(".fasta") or args.commands[0].lower().endswith(".fa"):
+        import pybio
+        data = pybio.data.Fasta(args.commands[0])
+        while data.read():
+            id = data.id.lstrip(" ")
+            id = id.split(" ")[0].replace("+", "plus").replace("-", "minus")
+            id_records = id.replace("plus", "+").replace("minus", "-").split("_")
+            chrstrand, start, stop = "_".join(id_records[:-2]), id_records[-2], id_records[-1] # chr name can have _ inside
+            start, stop = int(start), int(stop)
+            chr, strand = chrstrand[:-1], chrstrand[-1]
+            seq = data.sequence
+            # TODO
+            #process_CLIP(chr, strand, start, stop, id)
+            process(seq, id)
+    elif args.commands[0]=="bed":
+        make_bedgraph()
+    else:
+        process(args.commands[0], args.commands[1])

@@ -1,0 +1,2 @@
+# if no leading /, all paths (folders) are relative to scanRBP root folder
+data_folder="~/scanRBP_data"

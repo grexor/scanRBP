@@ -27,5 +27,5 @@ setup(
     package_data={
         'scanRBP': ['version'],
     },
-    install_requires=["biopython"],
+    install_requires=["scipy", "biopython", "seaborn", "matplotlib", "pybio"],
 )
