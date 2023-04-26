@@ -72,4 +72,8 @@ https://static-content.springer.com/esm/art%3A10.1186%2Fs13059-023-02913-0/Media
 
 # CLIP dataset
 
-Any bedGraph CLIP peak called file for a specific genome.
+bedGraph files list from:
+
+https://www.encodeproject.org/metadata/?status=released&internal_tags=ENCORE&assay_title=eCLIP&biosample_ontology.term_name=K562&biosample_ontology.term_name=HepG2&type=Experiment&files.analyses.status=released&files.preferred_default=true
+
+Any other bedGraph CLIP peak called file for a specific genome can be added to the database.

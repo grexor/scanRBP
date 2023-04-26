@@ -17,7 +17,6 @@ import pybio
 
 scanRBP_path = Path(__file__).parent.absolute()
 
-
 CLIP_data = {}
 #CLIP_data["tardbp"] = pybio.data.Bedgraph("CLIP_data/eCLIP_tdp43_bedgraph.bed")
 def read_CLIP():
