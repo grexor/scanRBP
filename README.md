@@ -1,4 +1,4 @@
-# What is scanRBP?
+### What is scanRBP?
 
 scanRBP loads RNA-protein binding motif PWM and computes the log-odds scores for all the loaded RBPs across a given genomic sequence + draws a heatmap of the scores.
 
@@ -10,7 +10,7 @@ The scores can be described as follows ([biopython docs](http://biopython.org/DI
 
 For more information, see the [biopython docs](http://biopython.org/DIST/docs/tutorial/Tutorial.html).
 
-# Example run
+### Example run
 
 scanRBP quick start:
 
@@ -34,7 +34,7 @@ Options:
      -nonzero                All negative vector values are set to 0, not enabled by default
 ```
 
-Example runs:
+Examples:
 
 ```
 # taking a random sequence, will produce binding scores and a heatmap
@@ -46,7 +46,7 @@ Example runs:
 ./scanRBP data.fasta
 ```
 
-# Motif PWM database
+### Motif PWM database
 
 Using the mCross database of 112 RBPs from the paper:
 
@@ -61,12 +61,12 @@ wget http://zhanglab.c2b2.columbia.edu/data/mCross/eCLIP_mCross_PWM.tgz --no-che
 tar xfz eCLIP_mCross_PWM.tgz
 ```
 
-# Additional PWM dataset
+### Additional PWM dataset
 
 https://genomebiology.biomedcentral.com/articles/10.1186/s13059-023-02913-0
 https://static-content.springer.com/esm/art%3A10.1186%2Fs13059-023-02913-0/MediaObjects/13059_2023_2913_MOESM6_ESM.txt
 
-# CLIP dataset
+### CLIP dataset
 
 bedGraph files list from:
 
