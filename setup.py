@@ -25,7 +25,7 @@ setup(
     keywords=['scanRBP', 'bioinformatics', 'RBP', 'RNA-protein binding', 'toolkit'],
     include_package_data=True,
     package_data={
-        'scanRBP': ['version'],
+        'scanRBP': ['version', 'scanRBP.config.example'],
     },
     install_requires=["scipy", "biopython", "seaborn", "matplotlib", "pybio"],
 )
