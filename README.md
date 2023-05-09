@@ -73,3 +73,7 @@ bedGraph files list from:
 https://www.encodeproject.org/metadata/?status=released&internal_tags=ENCORE&assay_title=eCLIP&biosample_ontology.term_name=K562&biosample_ontology.term_name=HepG2&type=Experiment&files.analyses.status=released&files.preferred_default=true
 
 Any other bedGraph CLIP peak called file for a specific genome can be added to the database.
+
+### Gene data
+
+Gene metadata (names, aliases) donwloaded from: [https://www.ncbi.nlm.nih.gov/gene/?term=human[organism](NCBI gene)

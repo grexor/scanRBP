@@ -1,7 +1,7 @@
 """
 scanRBP
 
-Scanning and plotting RNA-protein binding from PWM and real CLIP data.
+Scanning and plotting RNA-protein binding from PWM and CLIP data.
 
 Github: https://github.com/grexor/scanRBP
 """
