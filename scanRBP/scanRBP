@@ -172,8 +172,6 @@ if len(args.commands)>0:
             scanRBP.config.change() # ask for genome folder
         sys.exit(0)
 
-    scanRBP.pwm.init(args)
-
     if args.commands[0].lower().endswith(".fasta") or args.commands[0].lower().endswith(".fa"):
         import pybio
         data = pybio.data.Fasta(args.commands[0])

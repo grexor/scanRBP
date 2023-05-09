@@ -4,7 +4,7 @@ import sys
 from Bio import motifs
 import scanRBP
 
-database = {}
+pssm = {}
 
 def download_pwm():
     # PWMs not present? download
@@ -23,24 +23,16 @@ def download_pwm():
         os.system(f"rmdir {data_folder}/eCLIP_PWM >/dev/null 2>&1")
         os.system(f"rm {data_folder}/eCLIP_mCross_PWM.tgz >/dev/null 2>&1")
 
-def init(args):
+def init():
     download_pwm()
-    if args.only_protein!=False:
-        files = glob.glob(f"{scanRBP.config.data_folder}/pwm/*{args.only_protein}*.mat")
-    else:
-        files = glob.glob(f"{scanRBP.config.data_folder}/pwm/*.00.mat")
-    if args.all_protein!=False:
-        files = files + glob.glob(f"{scanRBP.config.data_folder}/pwm/*{args.all_protein}*.mat")
-
-    for fname in files:
+    for scan_id, data in scanRBP.database.proteins.items():
+        fname = data["pwm_path"]
         record = motifs.parse(open(fname), "TRANSFAC", strict=False)
         try:
             motif = record[0]
             motif.pseudocounts = 3
-            pssm = motif.pwm.log_odds()
-            if motif["ID"].find("HNRNPC")!=-1:
-                continue
-            database[motif["ID"]] = pssm
+            pssm_temp = motif.pwm.log_odds()
+            pssm[scan_id] = pssm_temp
         except:
             pass
 

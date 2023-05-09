@@ -18,3 +18,5 @@ version = open(os.path.join(scanRBP_folder, "version"), "rt").readlines()[0].rep
 
 # initialize path module
 scanRBP.config.init()
+scanRBP.database.init()
+scanRBP.pwm.init()
