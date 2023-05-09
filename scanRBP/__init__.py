@@ -10,6 +10,7 @@ import os
 import json
 import scanRBP.config
 import scanRBP.pwm
+import scanRBP.database
 
 scanRBP_path = os.path.abspath(__file__)
 scanRBP_folder = os.path.dirname(scanRBP_path)
