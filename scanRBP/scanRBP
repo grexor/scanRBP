@@ -19,8 +19,6 @@ import scanRBP
 
 scanRBP_path = Path(__file__).parent.absolute()
 
-scanRBP.config.init()
-
 CLIP_data = {}
 def read_CLIP():
     f = open("eCLIP_data/metadata.tsv", "rt")
@@ -116,7 +114,7 @@ def process(seq, output_fname):
     heatmap_data = []
     heatmap_columns = []
 
-    for motif_id, pssm in scanRBP.pwm.database.items():
+    for motif_id, pssm in scanRBP.pwm.pssm.items():
         scores = pssm.calculate(seq)
         scores = [x if x!=-math.inf else 0 for x in scores]
         if args.nonzero:

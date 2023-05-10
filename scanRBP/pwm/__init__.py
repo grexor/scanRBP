@@ -27,6 +27,7 @@ def init():
     download_pwm()
     for scan_id, data in scanRBP.database.proteins.items():
         fname = data["pwm_path"]
+        fname = os.path.join(scanRBP.config.data_folder, data["pwm_path"])
         record = motifs.parse(open(fname), "TRANSFAC", strict=False)
         try:
             motif = record[0]
