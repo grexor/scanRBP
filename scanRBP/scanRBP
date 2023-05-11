@@ -37,24 +37,25 @@ def read_CLIP():
     f.close()
 
 help_0 = """
-Usage for single sequence: scanRBP sequence output [options]
-     * one sequence provided on the command line, generates output.png/pdf + output.tab
+Usage: scanRBP sequence output [options]
+    * one sequence provided on the command line, generates output.png/pdf + output.tab
 
-Usage for processing FASTA file: scanRBP filename.fasta [options]
-     * one heatmap/matrix will be generated per sequence
-     * output name of the files will be sequence ids provided in the fasta file
+Usage: scanRBP filename.fasta [options]
+    * one heatmap/matrix will be generated per sequence
+    * output name of the files will be sequence ids provided in the fasta file
+
+Usage: scanRBP search protein_name 
+    * returns scan_id and descripton for all found proteins in the database 
 
 Options:
-     -annotate               Annotate each heatmap cell with the number
-     -xlabels                Display sequence (x-labels), default False
-     -only_protein TARDBP    Only analyze binding for the specific protein / search by name
-     -all_protein TARDBP     Additionally to one motif per protein (for all proteins), also include all motifs (PWMs) for this specific protein (search by name)
-                             (note that one protein can have several PWMs)
-     -figsize "(10,20)"      Change matplotlib/seaborn figure size for the heatmap, example width=10, height=20
-     -heatmap title          Make heatmap (png+pdf) with title
-     -output_folder folder   Store all results to the output folder (default: current folder)
-     -nonzero                All negative vector values are set to 0, not enabled by default
-     -CLIP                   Use actual CLIP data, do not use PWM
+     -annotate                Annotate each heatmap cell with the number
+     -xlabels                 Display sequence (x-labels), default False
+     -protein TARDBP.K562.00  Only analyze binding for the provided protein (default: analyze binding for all proteins in scanRBP database)
+     -figsize "(10,20)"       Change matplotlib/seaborn figure size for the heatmap, example width=10, height=20
+     -heatmap title           Make heatmap (png+pdf) with title
+     -output_folder folder    Store all results to the output folder (default: current folder)
+     -nonzero                 All negative vector values are set to 0, not enabled by default
+     -CLIP                    Use actual CLIP data, do not use PWM
 """
 
 parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, add_help=False)
@@ -62,8 +63,7 @@ parser.add_argument('commands', help="command(s) to run", nargs='*')
 parser.add_argument("-help", "-h", "--help", action="store_true")
 parser.add_argument("-annotate", "--annotate", action="store_true", default=False)
 parser.add_argument("-xlabels", "--xlabels", action="store_true", default=False)
-parser.add_argument("-only_protein", "--only_protein", default=False)
-parser.add_argument("-all_protein", "--all_protein", default=False)
+parser.add_argument("-protein", "--protein", default=False)
 parser.add_argument("-figsize", "--figsize", default=False)
 parser.add_argument("-title", "--title", default=False)
 parser.add_argument("-matrix", "--matrix", action="store_true", default=True)
@@ -78,6 +78,18 @@ args = parser.parse_args()
 print(f"[scanRBP] v{scanRBP.version}, https://github.com/grexor/scanRBP")
 print(f"[scanRBP] data folder: {scanRBP.config.data_folder}")
 print()
+
+# find all proteins with search
+def find_proteins(search):
+    results, results_data = [], []
+    for scan_id, data in scanRBP.database.proteins.items():
+        protein_desc_lower = data["description"].lower()
+        scan_id_lower = scan_id.lower()
+        search_lower = search.lower()
+        if scan_id_lower.find(search_lower)!=-1 or protein_desc_lower.find(search_lower)!=-1:
+            results.append(scan_id)
+            results_data.append(data)
+    return results, results_data
 
 if args.version:
     sys.exit(0)
@@ -110,11 +122,14 @@ def process_CLIP(chr, strand, start, stop, output_fname):
     data.to_csv(args.output_folder+"/"+basename+"_CLIP.tab", sep="\t")
 
 
-def process(seq, output_fname):
+def process(seq, output_fname, args):
     heatmap_data = []
     heatmap_columns = []
 
-    for motif_id, pssm in scanRBP.pwm.pssm.items():
+    for scan_id, pssm in scanRBP.pwm.pssm.items():
+        if args.protein: # only process a specific protein?
+            if scan_id not in args.protein:
+                continue
         scores = pssm.calculate(seq)
         scores = [x if x!=-math.inf else 0 for x in scores]
         if args.nonzero:
@@ -122,7 +137,7 @@ def process(seq, output_fname):
         if len(scores)<len(seq):
             scores = scores + [0] * (len(seq)-len(scores))
         heatmap_data.append(scores)
-        heatmap_columns.append(motif_id)
+        heatmap_columns.append(scan_id)
 
     for index, data in enumerate(heatmap_data):
         assert(len(seq)==len(data))
@@ -163,11 +178,28 @@ def process(seq, output_fname):
 
 if len(args.commands)>0:
 
+    if args.protein:
+        args.protein, _ = find_proteins(args.protein)
+
     if args.commands[0]=="config":
         if len(args.commands)>1:
             scanRBP.config.change(args.commands[1]) # pybio config genome_folder
         else:
             scanRBP.config.change() # ask for genome folder
+        sys.exit(0)
+
+    if args.commands[0]=="search":
+        if len(args.commands)>1:
+            proteins, proteins_data = find_proteins(args.commands[1])
+            print("[scanRBP] Found proteins in the scanRBP database:")
+            table = []
+            for rec in proteins_data:
+                table.append([rec['scan_id'], rec['protein'], rec['tissue'], rec['description']])
+            df = pandas.DataFrame(table, columns = ['scan_id', 'protein', 'tissue', 'description'])
+            print(df.to_string(index=False))
+            #print(f"{rec['scan_id']}\t{rec['protein']}\t{rec['tissue']}\t{rec['description']:<5}")
+        else:
+            print("[scanRBP] please provide search term (protein name)")
         sys.exit(0)
 
     if args.commands[0].lower().endswith(".fasta") or args.commands[0].lower().endswith(".fa"):
@@ -183,8 +215,8 @@ if len(args.commands)>0:
             seq = data.sequence
             # TODO
             #process_CLIP(chr, strand, start, stop, id)
-            process(seq, id)
+            process(seq, id, args)
     elif args.commands[0]=="bed":
         make_bedgraph()
     else:
-        process(args.commands[0], args.commands[1])
+        process(args.commands[0], args.commands[1], args)
