@@ -218,4 +218,7 @@ if len(args.commands)>0:
     elif args.commands[0]=="bed":
         make_bedgraph()
     else:
-        process(args.commands[0], args.commands[1], args)
+        if len(args.commands)>=2:
+            process(args.commands[0], args.commands[1], args)
+        else:
+            print(help_0)
