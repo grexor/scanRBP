@@ -29,3 +29,4 @@ def init(data_folder=None):
         for (k, v) in new_config:
             f.write(f"{k}=\"{v}\"\n")
         f.close()
+        print(f"[scanRBP] Data folder changed to '{data_folder}'")
