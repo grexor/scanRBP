@@ -76,4 +76,4 @@ Any other bedGraph CLIP peak called file for a specific genome can be added to t
 
 ### Gene data
 
-Gene metadata (names, aliases) donwloaded from https://www.ncbi.nlm.nih.gov/gene/?term=human[organism]
+Gene metadata (names, aliases) donwloaded from https://www.ncbi.nlm.nih.gov/gene/?term=human[organism]   
