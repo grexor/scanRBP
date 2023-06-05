@@ -10,6 +10,16 @@ The scores can be described as follows ([biopython docs](http://biopython.org/DI
 
 For more information, see the [biopython docs](http://biopython.org/DIST/docs/tutorial/Tutorial.html).
 
+### Installation <a name="initial_setup"></a>
+
+The easiest way to install scanRBP is to simply run:
+
+`$ pip install scanRBP`
+
+Note that on some systems, pip is installing the executable scripts under `~/.local/bin`. However this folder is not in the PATH which will result in `command not found` if you try to run `$ scanRBP` on the command line. To fix this, please execute `export PATH="$PATH:~/.local/bin"` (and add this to your `.profile`). Another suggestion is to install inside a virtual environment (using `virtualenv`).
+
+If you would like to install scanRBP directly from this repository, clone the repository into a folder, for example `~/software/scanRBP`. Add the `~/software/scanRBP` folder to $PYTHONPATH (`export PYTHONPATH=$PYTHONPATH:~/software/scanRBP`).
+
 ### Example run
 
 scanRBP quick start:
