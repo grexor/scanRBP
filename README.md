@@ -71,12 +71,12 @@ wget http://zhanglab.c2b2.columbia.edu/data/mCross/eCLIP_mCross_PWM.tgz --no-che
 tar xfz eCLIP_mCross_PWM.tgz
 ```
 
-### Additional PWM dataset
+### Additional PWM datasets
 
 https://genomebiology.biomedcentral.com/articles/10.1186/s13059-023-02913-0
 https://static-content.springer.com/esm/art%3A10.1186%2Fs13059-023-02913-0/MediaObjects/13059_2023_2913_MOESM6_ESM.txt
 
-### CLIP dataset
+### CLIP datasets
 
 bedGraph files list from:
 

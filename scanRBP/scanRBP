@@ -75,6 +75,7 @@ parser.add_argument("-version", "--version", help="Print version", action="store
 args = parser.parse_args()
 
 print(f"[scanRBP] v{scanRBP.version}, https://github.com/grexor/scanRBP")
+print(f"[scanRBP] config file: {scanRBP.config.config_fname()}")
 print(f"[scanRBP] data folder: {scanRBP.config.data_folder}")
 print()
 
