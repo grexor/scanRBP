@@ -51,6 +51,7 @@ Options:
      -xlabels                 Display sequence (x-labels), default False
      -protein TARDBP.K562.00  Only analyze binding for the provided protein (default: analyze binding for all proteins in scanRBP database)
      -figsize "(10,20)"       Change matplotlib/seaborn figure size for the heatmap, example width=10, height=20
+     -fontscale               Change font scale, default 0.2
      -heatmap title           Make heatmap (png+pdf) with title
      -output_folder folder    Store all results to the output folder (default: current folder)
      -nonzero                 All negative vector values are set to 0, not enabled by default
@@ -64,6 +65,7 @@ parser.add_argument("-annotate", "--annotate", action="store_true", default=Fals
 parser.add_argument("-xlabels", "--xlabels", action="store_true", default=False)
 parser.add_argument("-protein", "--protein", default=False)
 parser.add_argument("-figsize", "--figsize", default=False)
+parser.add_argument("-fontscale", "--fontscale", default=0.2, type=float)
 parser.add_argument("-title", "--title", default=False)
 parser.add_argument("-matrix", "--matrix", action="store_true", default=True)
 parser.add_argument("-CLIP", "--CLIP", action="store_true", default=False)
@@ -122,7 +124,7 @@ def process_CLIP(chr, strand, start, stop, output_fname):
     data.to_csv(args.output_folder+"/"+basename+"_CLIP.tab", sep="\t")
 
 
-def process(seq, output_fname, args):
+def process(seq, output_fname, args, title=None):
     heatmap_data = []
     heatmap_columns = []
 
@@ -150,7 +152,7 @@ def process(seq, output_fname, args):
     if args.heatmap!=False:
         plt.figure()
         sns.set(font="Arial")
-        sns.set(font_scale=0.4)
+        sns.set(font_scale=args.fontscale)
         sns.set_style("dark")
         sns.set_style("ticks")
 
@@ -170,7 +172,10 @@ def process(seq, output_fname, args):
         fig = sns.clustermap(data, **optional_params)
         fig.ax_col_dendrogram.set_visible(False)
 
-        plt.title(args.heatmap)
+        if title==None:
+            plt.title(args.heatmap)
+        else:
+            plt.title(title)
         plt.tight_layout() 
         plt.savefig(args.output_folder+"/"+basename+".png", dpi=300)
         plt.savefig(args.output_folder+"/"+basename+".pdf")
@@ -207,15 +212,15 @@ if len(args.commands)>0:
         data = pybio.data.Fasta(args.commands[0])
         while data.read():
             id = data.id.lstrip(" ")
-            id = id.split(" ")[0].replace("+", "plus").replace("-", "minus")
-            id_records = id.replace("plus", "+").replace("minus", "-").split("_")
-            chrstrand, start, stop = "_".join(id_records[:-2]), id_records[-2], id_records[-1] # chr name can have _ inside
-            start, stop = int(start), int(stop)
-            chr, strand = chrstrand[:-1], chrstrand[-1]
+            #id = id.split(" ")[0].replace("+", "plus").replace("-", "minus")
+            #id_records = id.replace("plus", "+").replace("minus", "-").split("_")
+            #chrstrand, start, stop = "_".join(id_records[:-2]), id_records[-2], id_records[-1] # chr name can have _ inside
+            #start, stop = int(start), int(stop)
+            #chr, strand = chrstrand[:-1], chrstrand[-1]
             seq = data.sequence
             # TODO
             #process_CLIP(chr, strand, start, stop, id)
-            process(seq, id, args)
+            process(seq, id, args, title=id)
     elif args.commands[0]=="bed":
         make_bedgraph()
     else:
