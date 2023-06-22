@@ -218,14 +218,7 @@ if len(args.commands)>0:
         while data.read():
             basename = args.commands[0].rstrip(".fasta").rstrip(".fa")
             id = basename + "_" + data.id.lstrip(" ")
-            #id = id.split(" ")[0].replace("+", "plus").replace("-", "minus")
-            #id_records = id.replace("plus", "+").replace("minus", "-").split("_")
-            #chrstrand, start, stop = "_".join(id_records[:-2]), id_records[-2], id_records[-1] # chr name can have _ inside
-            #start, stop = int(start), int(stop)
-            #chr, strand = chrstrand[:-1], chrstrand[-1]
             seq = data.sequence
-            # TODO
-            #process_CLIP(chr, strand, start, stop, id)
             process(seq, id, args, title=id)
     elif args.commands[0]=="bed":
         make_bedgraph()
