@@ -128,6 +128,7 @@ def process(seq, output_fname, args, title=None):
     heatmap_data = []
     heatmap_columns = []
 
+    sum_all = 0
     for scan_id, pssm in scanRBP.pwm.pssm.items():
         if args.protein: # only process a specific protein?
             if scan_id not in args.protein:
@@ -138,16 +139,20 @@ def process(seq, output_fname, args, title=None):
             scores = [x if x>=0 else 0 for x in scores]
         if len(scores)<len(seq):
             scores = scores + [0] * (len(seq)-len(scores))
+        sum_all += sum(scores)
         heatmap_data.append(scores)
         heatmap_columns.append(scan_id)
+
+    text_score = "%06d" % sum_all
 
     for index, data in enumerate(heatmap_data):
         assert(len(seq)==len(data))
 
     heatmap_rows = list(seq)
-    basename = output_fname.replace(".png", "").replace(".pdf", "")
+    output_fname = output_fname.replace("+", "plus").replace("-", "minus")
+    basename = os.path.basename(output_fname.replace(".png", "").replace(".pdf", ""))
     data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
-    data.to_csv(args.output_folder+"/"+basename+"_PWM.tab", sep="\t")
+    data.to_csv(args.output_folder+"/"+text_score + "_" + basename+"_PWM.tab", sep="\t")
 
     if args.heatmap!=False:
         plt.figure()
@@ -173,12 +178,12 @@ def process(seq, output_fname, args, title=None):
         fig.ax_col_dendrogram.set_visible(False)
 
         if title==None:
-            plt.title(args.heatmap)
+            plt.title(output_fname + ": " + args.heatmap)
         else:
             plt.title(title)
         plt.tight_layout() 
-        plt.savefig(args.output_folder+"/"+basename+".png", dpi=300)
-        plt.savefig(args.output_folder+"/"+basename+".pdf")
+        plt.savefig(args.output_folder+"/"+ text_score + "_" + basename+".png", dpi=300)
+        plt.savefig(args.output_folder+"/"+ text_score + "_" + basename+".pdf")
         plt.close()
 
 if len(args.commands)>0:
@@ -211,7 +216,8 @@ if len(args.commands)>0:
         import pybio
         data = pybio.data.Fasta(args.commands[0])
         while data.read():
-            id = data.id.lstrip(" ")
+            basename = args.commands[0].rstrip(".fasta").rstrip(".fa")
+            id = basename + "_" + data.id.lstrip(" ")
             #id = id.split(" ")[0].replace("+", "plus").replace("-", "minus")
             #id_records = id.replace("plus", "+").replace("minus", "-").split("_")
             #chrstrand, start, stop = "_".join(id_records[:-2]), id_records[-2], id_records[-1] # chr name can have _ inside
