@@ -50,6 +50,7 @@ Options:
      -annotate                Annotate each heatmap cell with the number
      -xlabels                 Display sequence (x-labels), default False
      -protein TARDBP.K562.00  Only analyze binding for the provided protein (default: analyze binding for all proteins in scanRBP database)
+     -cumulative              Take only one protein (-protein) and plot binding across all sequences provided in the FASTA file
      -figsize "(10,20)"       Change matplotlib/seaborn figure size for the heatmap, example width=10, height=20
      -fontscale               Change font scale, default 0.2
      -heatmap title           Make heatmap (png+pdf) with title
@@ -72,6 +73,7 @@ parser.add_argument("-CLIP", "--CLIP", action="store_true", default=False)
 parser.add_argument("-nonzero", "--nonzero", action="store_true", default=False)
 parser.add_argument("-heatmap", "--heatmap", default=False)
 parser.add_argument("-output_folder", "--output_folder", default=".")
+parser.add_argument("-cumulative", "--cumulative", action="store_true", default=False)
 parser.add_argument("-version", "--version", help="Print version", action="store_true")
 
 args = parser.parse_args()
@@ -176,6 +178,79 @@ def process(seq, output_fname, args, title=None):
             optional_params["figsize"] = eval(args.figsize)
         fig = sns.clustermap(data, **optional_params)
         fig.ax_col_dendrogram.set_visible(False)
+        ax = fig.ax_heatmap
+        ax.vlines([int(len(seq)/2)], *ax.get_ylim(), linestyle='dashed', label='center', colors=["#bbbbbb"], linewidth=1)
+
+        if title==None:
+            plt.title(output_fname + ": " + args.heatmap)
+        else:
+            plt.title(title)
+        plt.tight_layout() 
+        plt.savefig(args.output_folder+"/"+ text_score + "_" + basename+".png", dpi=300)
+        plt.savefig(args.output_folder+"/"+ text_score + "_" + basename+".pdf")
+        plt.close()
+
+
+def process_cumulative(seqs, protein, output_fname, args, title=None):
+    heatmap_data = []
+    heatmap_columns = []
+
+    sum_all = 0
+    pssm = scanRBP.pwm.pssm[protein]
+    seq_len = None
+    for (seq_id, seq) in seqs:
+        if seq_len==None:
+            seq_len = len(seq)
+        else:
+            if len(seq)!=seq_len:
+                print("Please provide a FASTA file with sequences of equal length.")
+                sys.exit(1)
+        scores = pssm.calculate(seq)
+
+        scores = [x if x!=-math.inf else 0 for x in scores]
+        if args.nonzero:
+            scores = [x if x>=0 else 0 for x in scores]
+        if len(scores)<len(seq):
+            scores = scores + [0] * (len(seq)-len(scores))
+        sum_all += sum(scores)
+        heatmap_data.append(scores)
+        heatmap_columns.append(seq_id)
+
+    text_score = "%06d" % sum_all
+
+    for index, data in enumerate(heatmap_data):
+        assert(len(seq)==len(data))
+
+    heatmap_rows = list(seq)
+    output_fname = output_fname.replace("+", "plus").replace("-", "minus")
+    basename = os.path.basename(output_fname.replace(".png", "").replace(".pdf", ""))
+    data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
+    data.to_csv(args.output_folder+"/"+text_score + "_" + basename+"_PWM.tab", sep="\t")
+
+    if args.heatmap!=False:
+        plt.figure()
+        sns.set(font="Arial")
+        sns.set(font_scale=args.fontscale)
+        sns.set_style("dark")
+        sns.set_style("ticks")
+
+        rdgn = sns.diverging_palette(h_neg=130, h_pos=10, s=99, l=55, sep=3, as_cmap=True)
+        optional_params = {"linewidths":0.0}
+        optional_params["col_cluster"] = False
+        optional_params["annot"] = args.annotate
+        optional_params["center"] = 0
+        optional_params["fmt"] = ".0f"
+        optional_params["yticklabels"] = True
+        optional_params["xticklabels"] = args.xlabels
+        optional_params["cmap"] = rdgn
+        optional_params["cbar_pos"] = None
+
+        if args.figsize!=False:
+            optional_params["figsize"] = eval(args.figsize)
+        fig = sns.clustermap(data, **optional_params)
+        fig.ax_col_dendrogram.set_visible(False)
+        ax = fig.ax_heatmap
+        ax.vlines([int(seq_len/2)], *ax.get_ylim(), linestyle='dashed', label='center', colors=["#bbbbbb"], linewidth=1)
 
         if title==None:
             plt.title(output_fname + ": " + args.heatmap)
@@ -215,11 +290,20 @@ if len(args.commands)>0:
     if args.commands[0].lower().endswith(".fasta") or args.commands[0].lower().endswith(".fa"):
         import pybio
         data = pybio.data.Fasta(args.commands[0])
+        seqs = []
         while data.read():
             basename = args.commands[0].rstrip(".fasta").rstrip(".fa")
             id = basename + "_" + data.id.lstrip(" ")
             seq = data.sequence
-            process(seq, id, args, title=id)
+            if not args.cumulative:
+                process(seq, id, args, title=id)
+            seqs.append((data.id.lstrip(" "), data.sequence))
+        if args.cumulative:
+            if args.protein==False:
+                print("Please provide a specific protein (or list of proteins) with '-protein name1,name2...' to compute cumulative binding across all sequences in the FASTA file for each of the provided proteins.")
+                sys.exit(1)
+            for protein in args.protein:
+                process_cumulative(seqs, protein, basename+"_"+protein, args, title=basename+"_"+protein)
     elif args.commands[0]=="bed":
         make_bedgraph()
     else:
