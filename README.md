@@ -1,3 +1,4 @@
+<picture><img src="media/scanRBP_logo.png" height="30"/></picture>
 ### What is scanRBP?
 
 scanRBP loads RNA-protein binding motif PWM and computes the log-odds scores for all the loaded RBPs across a given genomic sequence + draws a heatmap of the scores.

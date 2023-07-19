@@ -75,6 +75,7 @@ parser.add_argument("-heatmap", "--heatmap", default=False)
 parser.add_argument("-output_folder", "--output_folder", default=".")
 parser.add_argument("-cumulative", "--cumulative", action="store_true", default=False)
 parser.add_argument("-version", "--version", help="Print version", action="store_true")
+parser.add_argument("-vlines", "--vlines", default="[]", type=str)
 
 args = parser.parse_args()
 
@@ -123,6 +124,8 @@ def process_CLIP(chr, strand, start, stop, output_fname):
         heatmap_rows.reverse()
     basename = output_fname.replace(".png", "").replace(".pdf", "")
     data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
+    if not os.path.exists(args.output_folder):
+        os.makedirs(args.output_folder)
     data.to_csv(args.output_folder+"/"+basename+"_CLIP.tab", sep="\t")
 
 
@@ -154,6 +157,8 @@ def process(seq, output_fname, args, title=None):
     output_fname = output_fname.replace("+", "plus").replace("-", "minus")
     basename = os.path.basename(output_fname.replace(".png", "").replace(".pdf", ""))
     data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
+    if not os.path.exists(args.output_folder):
+        os.makedirs(args.output_folder)
     data.to_csv(args.output_folder+"/"+text_score + "_" + basename+"_PWM.tab", sep="\t")
 
     if args.heatmap!=False:
@@ -179,13 +184,26 @@ def process(seq, output_fname, args, title=None):
         fig = sns.clustermap(data, **optional_params)
         fig.ax_col_dendrogram.set_visible(False)
         ax = fig.ax_heatmap
-        ax.vlines([int(len(seq)/2)], *ax.get_ylim(), linestyle='dashed', label='center', colors=["#bbbbbb"], linewidth=1)
+        #ax.vlines([int(len(seq)/2)], *ax.get_ylim(), linestyle='dashed', label='center', colors=["#bbbbbb"], linewidth=1)
+
+        vlines = args.vlines
+        if not vlines.startswith("["):
+            vlines = "[" + vlines
+        if not vlines.endswith("]"):
+            vlines = vlines + "]"
+        vlines = eval(vlines)
+        for vline_x in vlines:
+            if vline_x<0:
+                vline_x = len(seq)+vline_x
+            ax.vlines([vline_x], *ax.get_ylim(), linestyle='dashed', label='center', colors=["#bbbbbb"], linewidth=1)
 
         if title==None:
             plt.title(output_fname + ": " + args.heatmap)
         else:
             plt.title(title)
         plt.tight_layout() 
+        if not os.path.exists(args.output_folder):
+            os.makedirs(args.output_folder)
         plt.savefig(args.output_folder+"/"+ text_score + "_" + basename+".png", dpi=300)
         plt.savefig(args.output_folder+"/"+ text_score + "_" + basename+".pdf")
         plt.close()
@@ -225,6 +243,8 @@ def process_cumulative(seqs, protein, output_fname, args, title=None):
     output_fname = output_fname.replace("+", "plus").replace("-", "minus")
     basename = os.path.basename(output_fname.replace(".png", "").replace(".pdf", ""))
     data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
+    if not os.path.exists(args.output_folder):
+        os.makedirs(args.output_folder)
     data.to_csv(args.output_folder+"/"+text_score + "_" + basename+"_PWM.tab", sep="\t")
 
     if args.heatmap!=False:
@@ -250,13 +270,26 @@ def process_cumulative(seqs, protein, output_fname, args, title=None):
         fig = sns.clustermap(data, **optional_params)
         fig.ax_col_dendrogram.set_visible(False)
         ax = fig.ax_heatmap
-        ax.vlines([int(seq_len/2)], *ax.get_ylim(), linestyle='dashed', label='center', colors=["#bbbbbb"], linewidth=1)
+        #ax.vlines([int(seq_len/2)], *ax.get_ylim(), linestyle='dashed', label='center', colors=["#bbbbbb"], linewidth=1)
+
+        vlines = args.vlines
+        if not vlines.startswith("["):
+            vlines = "[" + vlines
+        if not vlines.endswith("]"):
+            vlines = vlines + "]"
+        vlines = eval(vlines)
+        for vline_x in vlines:
+            if vline_x<0:
+                vline_x = len(seq)+vline_x
+            ax.vlines([vline_x], *ax.get_ylim(), linestyle='dashed', label='center', colors=["#bbbbbb"], linewidth=1)
 
         if title==None:
             plt.title(output_fname + ": " + args.heatmap)
         else:
             plt.title(title)
         plt.tight_layout() 
+        if not os.path.exists(args.output_folder):
+            os.makedirs(args.output_folder)
         plt.savefig(args.output_folder+"/"+ text_score + "_" + basename+".png", dpi=300)
         plt.savefig(args.output_folder+"/"+ text_score + "_" + basename+".pdf")
         plt.close()
@@ -292,7 +325,7 @@ if len(args.commands)>0:
         data = pybio.data.Fasta(args.commands[0])
         seqs = []
         while data.read():
-            basename = args.commands[0].rstrip(".fasta").rstrip(".fa")
+            basename = ".".join(args.commands[0].split(".")[:-1])
             id = basename + "_" + data.id.lstrip(" ")
             seq = data.sequence
             if not args.cumulative:
