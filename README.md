@@ -33,5 +33,5 @@ Super quick example:
 
 ### Documentation
 
-* [PDF reference manual](https://github.com/grexor/scanRBP/raw/master/docs/scanRBP_docs.pdf)
+* [PDF reference manual](https://github.com/grexor/scanRBP/raw/main/docs/scanRBP_docs.pdf)
 * [Google docs](https://docs.google.com/document/d/1ejfayohzaKnLZfdyfINtEBLm4IacJBHxfC5eqSa1QLc/edit?usp=sharing) of the above PDF (comment if you like)
