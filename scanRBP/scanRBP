@@ -90,10 +90,11 @@ print()
 def find_proteins(search):
     results, results_data = [], []
     for scan_id, data in scanRBP.database.proteins.items():
+        protein_lower = data["protein"].lower()
         protein_desc_lower = data["description"].lower()
         scan_id_lower = scan_id.lower()
         search_lower = search.lower()
-        if scan_id_lower.find(search_lower)!=-1 or protein_desc_lower.find(search_lower)!=-1:
+        if scan_id_lower.find(search_lower)!=-1 or protein_desc_lower.find(search_lower)!=-1 or protein_lower.find(search_lower)!=-1:
             results.append(scan_id)
             results_data.append(data)
     return results, results_data
@@ -150,7 +151,7 @@ def process(seq, output_fname, args, title=None):
         heatmap_data.append(scores)
         heatmap_columns.append(scan_id)
 
-    text_score = "%06d" % sum_all
+    text_score = "%06d" % abs(sum_all)
 
     for index, data in enumerate(heatmap_data):
         assert(len(seq)==len(data))
@@ -162,7 +163,7 @@ def process(seq, output_fname, args, title=None):
     if not os.path.exists(args.output_folder):
         os.makedirs(args.output_folder)
     if not args.simple_names:
-        data.to_csv(f"{args.output_folder}/{text_score}_{basename}_PWM.tab", sep="\t")
+        data.to_csv(f"{args.output_folder}/{basename}_PWM.tab", sep="\t")
     else:
         data.to_csv(f"{args.output_folder}/{basename}_PWM.tab", sep="\t")
 
@@ -209,8 +210,8 @@ def process(seq, output_fname, args, title=None):
         plt.tight_layout() 
         if not os.path.exists(args.output_folder):
             os.makedirs(args.output_folder)
-        plt.savefig(args.output_folder+"/"+ text_score + "_" + basename+".png", dpi=300)
-        plt.savefig(args.output_folder+"/"+ text_score + "_" + basename+".pdf")
+        plt.savefig(f"{args.output_folder}/{basename}.png", dpi=300)
+        plt.savefig(f"{args.output_folder}/{basename}.pdf")
         plt.close()
 
 
@@ -316,8 +317,8 @@ if len(args.commands)>0:
                 print("[scanRBP] Found proteins in the scanRBP database:")
                 table = []
                 for rec in proteins_data:
-                    table.append([rec['scan_id'], rec['protein'], rec['tissue'], rec['description']])
-                df = pandas.DataFrame(table, columns = ['scan_id', 'protein', 'tissue', 'description'])
+                    table.append([rec['scan_id'], rec['protein'], rec['tissue'], rec['description'], rec['source']])
+                df = pandas.DataFrame(table, columns = ['scan_id', 'protein', 'tissue', 'description', 'source'])
                 print(df.to_string(index=False))
             else:
                 print(f"[scanRBP] Found no proteins in the scanRBP database with provided seach '{args.commands[1]}'")
