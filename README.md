@@ -35,3 +35,8 @@ Super quick example:
 
 * [PDF reference manual](https://github.com/grexor/scanRBP/raw/main/docs/scanRBP_docs.pdf)
 * [Google docs](https://docs.google.com/document/d/1ejfayohzaKnLZfdyfINtEBLm4IacJBHxfC5eqSa1QLc/edit?usp=sharing) of the above PDF (comment if you like)
+
+### Change log
+
+**v0.1.7**: November 2023
+* added mCross and CISBP-RNA motifs
