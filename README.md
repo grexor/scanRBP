@@ -38,5 +38,9 @@ Super quick example:
 
 ### Change log
 
+**v0.2**: June 2024
+* new: loading of BED files with peaks from *CLIP experiments, example from [Encode Project](https://www.encodeproject.org)
+* integrated PWMs from [CIS-BP](https://cisbp.ccbr.utoronto.ca) and [mCrossBase](https://zhanglab.c2b2.columbia.edu/mCrossBase)
+
 **v0.1.7**: November 2023
 * added mCross and CISBP-RNA motifs

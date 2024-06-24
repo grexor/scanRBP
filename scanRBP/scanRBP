@@ -17,24 +17,8 @@ import pybio
 import gzip
 import scanRBP
 
+clip = None
 scanRBP_path = Path(__file__).parent.absolute()
-
-CLIP_data = {}
-def read_CLIP():
-    f = open("eCLIP_data/metadata.tsv", "rt")
-    header = f.readline().replace("\r", "").replace("\n", "").split("\t")
-    r = f.readline()
-    while r:
-        r = r.replace("\r", "").replace("\n", "").split("\t")
-        data = dict(zip(header, r))
-        if data["File format"]=="bed narrowPeak":
-            fbase = data["File accession"]
-            fbed = f"eCLIP_data/{fbase}.bed"
-            protein = data["Experiment target"].replace("-human", "")
-            cell_type = data["Biosample term name"]
-            CLIP_data[(cell_type, protein)] = pybio.data.Bed(f"CLIP_data/{fbed}")
-        r = f.readline()
-    f.close()
 
 help_0 = """Usage: scanRBP sequence output [options]
     * one sequence provided on the command line, generates output.png/pdf + output.tab
@@ -56,7 +40,7 @@ Options:
      -heatmap title           Make heatmap (png+pdf) with title
      -output_folder folder    Store all results to the output folder (default: current folder)
      -nonzero                 All negative vector values are set to 0, not enabled by default
-     -CLIP                    Use actual CLIP data, do not use PWM
+     -clip peaks.bed.gz       Use actual CLIP data (peaks from BED file), do not use PWMs
      -force                   If output files already exist, overwrite them, otherwise do not process
 """
 
@@ -70,7 +54,7 @@ parser.add_argument("-figsize", "--figsize", default=False)
 parser.add_argument("-fontscale", "--fontscale", default=0.2, type=float)
 parser.add_argument("-title", "--title", default=False)
 parser.add_argument("-matrix", "--matrix", action="store_true", default=True)
-parser.add_argument("-CLIP", "--CLIP", action="store_true", default=False)
+parser.add_argument("-clip", "--clip", default=False)
 parser.add_argument("-nonzero", "--nonzero", action="store_true", default=False)
 parser.add_argument("-heatmap", "--heatmap", default=False)
 parser.add_argument("-force", "--force", default=False)
@@ -106,31 +90,6 @@ if len(args.commands) not in [1,2] or args.help:
     print(help_0)
     sys.exit(0)
 
-# converts BED files to bedGraph files (eCLIP datasets)
-def bed_bedgraph(fname_in, fname_out):
-    fin = gzip.open(fname_in)
-    fout = gzip.open(fname_out, "wb")
-    return
-
-def make_bedgraph():
-    files = glob.glob("../data/CLIP_bed/*.bed.gz")
-    print(files)
-
-def process_CLIP(chr, strand, start, stop, output_fname):
-    heatmap_data = []
-    heatmap_columns = []
-    scores = CLIP_data["tardbp"].get_vector(chr, strand, start, stop)
-    heatmap_data.append(scores)
-    heatmap_columns.append("K562.TARDBP.0")
-    heatmap_rows = list(range(start, stop+1))
-    if strand=="-":
-        heatmap_rows.reverse()
-    basename = output_fname.replace(".png", "").replace(".pdf", "")
-    data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
-    if not os.path.exists(args.output_folder):
-        os.makedirs(args.output_folder)
-    data.to_csv(args.output_folder+"/"+basename+"_CLIP.tab", sep="\t")
-
 def scan(seq):
     heatmap_data = []
     heatmap_columns = []
@@ -148,7 +107,7 @@ def scan(seq):
     data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
     return data
 
-def process(seq, output_fname, args, title=None):
+def process(seq, output_fname, args, title=None, seq_id=None): # called for each sequence
     output_fname = output_fname.replace("+", "plus").replace("-", "minus")
     basename = os.path.basename(output_fname.replace(".png", "").replace(".pdf", ""))
     output_final = f"{args.output_folder}/{basename}.tab.gz"
@@ -158,11 +117,13 @@ def process(seq, output_fname, args, title=None):
     heatmap_data = []
     heatmap_columns = []
     sum_all = 0
-    for scan_id, pssm in scanRBP.pwm.pssm.items():
-        if args.protein: # only process a specific protein?
-            if scan_id not in args.protein:
-                continue
-        scores = pssm.calculate(seq)
+    if args.clip: # read in clip data and compute scores using CLIP peaks from provided bedGraph file
+        coords = seq_id.split('_')
+        start = int(coords[-2])
+        stop = int(coords[-1])
+        strand = coords[-3][-1]
+        chr = '_'.join(coords[:-2])[:-1]
+        scores = clip.get_vector(chr, strand, start, stop)
         scores = [x if x!=-math.inf else 0 for x in scores]
         if args.nonzero:
             scores = [x if x>=0 else 0 for x in scores]
@@ -170,7 +131,21 @@ def process(seq, output_fname, args, title=None):
             scores = scores + [0] * (len(seq)-len(scores))
         sum_all += sum(scores)
         heatmap_data.append(scores)
-        heatmap_columns.append(scan_id)
+        heatmap_columns.append(args.protein)
+    else: # process sequences with PWMs
+        for scan_id, pssm in scanRBP.pwm.pssm.items():
+            if args.protein: # only process a specific protein?
+                if scan_id not in args.protein:
+                    continue
+            scores = pssm.calculate(seq)
+            scores = [x if x!=-math.inf else 0 for x in scores]
+            if args.nonzero:
+                scores = [x if x>=0 else 0 for x in scores]
+            if len(scores)<len(seq):
+                scores = scores + [0] * (len(seq)-len(scores))
+            sum_all += sum(scores)
+            heatmap_data.append(scores)
+            heatmap_columns.append(scan_id)
 
     for index, data in enumerate(heatmap_data):
         assert(len(seq)==len(data))
@@ -231,7 +206,6 @@ def process(seq, output_fname, args, title=None):
 def process_cumulative(seqs, protein, output_fname, args, title=None):
     heatmap_data = []
     heatmap_columns = []
-
     sum_all = 0
     pssm = scanRBP.pwm.pssm[protein]
     seq_len = None
@@ -242,7 +216,16 @@ def process_cumulative(seqs, protein, output_fname, args, title=None):
             if len(seq)!=seq_len:
                 print("scanRBP | please provide a FASTA file with sequences of equal length")
                 sys.exit(1)
-        scores = pssm.calculate(seq)
+        if args.clip: # read in clip data and compute scores using CLIP peaks from provided bedGraph file
+            print(f"scanRBP | loading CLIP {args.clip}")
+            coords = seq_id.split('_')
+            start = int(coords[-2])
+            stop = int(coords[-1])
+            strand = coords[-3][-1]
+            chr = '_'.join(coords[:-2])[:-1]
+            scores = clip.get_vector(chr, strand, start, stop)
+        else: # compute scores using PWM for specified protein
+            scores = pssm.calculate(seq)
 
         scores = [x if x!=-math.inf else 0 for x in scores]
         if args.nonzero:
@@ -341,14 +324,19 @@ if len(args.commands)>0:
         import pybio
         basename = ".".join(args.commands[0].split(".")[:-1])
         data = pybio.data.Fasta(args.commands[0])
+        if args.protein==False:
+            print(f"scanRBP | processing {args.commands[0]}")
+        else:
+            print(f"scanRBP | processing {args.commands[0]}, protein(s) {args.protein}")
         seqs = []
+        if args.clip:
+            clip = pybio.data.Bedgraph(args.clip)
         while data.read():
-            id = data.id.lstrip(" ").split(" ")[0]
-            #id = basename + "_" + id
-            id = f"pwm_{id}"
+            seq_id = data.id.lstrip(" ").split(" ")[0]
+            output_id = f"pwm_{seq_id}"
             seq = data.sequence
             if not args.cumulative:
-                process(seq, id, args, title=id)
+                process(seq, output_id, args, title=id, seq_id=seq_id)
             seqs.append((data.id.lstrip(" "), data.sequence))
         if args.cumulative:
             if args.protein==False:
