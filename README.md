@@ -47,7 +47,7 @@ Super quick example:
 
 ### Citation
 
-If you are using pybio in your research, please cite:
+If you are using scanRBP in your research, please cite:
 
 Rot, G., Wehling, A., Schmucki, R., Berntenis, N., Zhang, J. D., & Ebeling, M. (2024)<br>
 [splicekit : an integrative toolkit for splicing analysis from short-read RNA-seq](https://academic.oup.com/bioinformaticsadvances/article/4/1/vbae121/7735317)<br>
