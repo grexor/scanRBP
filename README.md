@@ -38,6 +38,9 @@ Super quick example:
 
 ### Change log
 
+**v0.3**: February 2025
+* scan code speedup using numpy
+
 **v0.2**: June 2024
 * new: loading of BED files with peaks from *CLIP experiments, example from [Encode Project](https://www.encodeproject.org)
 * integrated PWMs from [CIS-BP](https://cisbp.ccbr.utoronto.ca) and [mCrossBase](https://zhanglab.c2b2.columbia.edu/mCrossBase)

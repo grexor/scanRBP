@@ -11,7 +11,8 @@ import json
 import scanRBP.config
 import scanRBP.pwm
 import scanRBP.database
-import pandas
+import pandas as pd
+import numpy as np
 import math
 
 scanRBP_path = os.path.abspath(__file__)
@@ -24,18 +25,23 @@ scanRBP.database.init()
 scanRBP.pwm.init()
 
 def scan(seq):
-    heatmap_data = []
     heatmap_columns = []
-    sum_all = 0
+    heatmap_data = []
+    
+    seq_len = len(seq)
+    
     for scan_id, pssm in scanRBP.pwm.pssm.items():
-        scores = pssm.calculate(seq)
-        scores = [x if x!=-math.inf else 0 for x in scores]
-        scores = [x if x>=0 else 0 for x in scores]
-        if len(scores)<len(seq):
-            scores = scores + [0] * (len(seq)-len(scores))
-        sum_all += sum(scores)
+        scores = np.array(pssm.calculate(seq), dtype=np.float32)
+        
+        # replace -inf with 0 and remove negatives in one operation
+        scores = np.where(scores == -math.inf, 0, scores)
+        scores = np.maximum(scores, 0)
+
+        # ensure scores array matches sequence length
+        if scores.shape[0] < seq_len:
+            scores = np.pad(scores, (0, seq_len - scores.shape[0]), constant_values=0)
+
         heatmap_data.append(scores)
         heatmap_columns.append(scan_id)
-    heatmap_rows = list(seq)
-    data = pandas.DataFrame(heatmap_data, index=heatmap_columns, columns=heatmap_rows)
-    return data
+
+    return pd.DataFrame(heatmap_data, index=heatmap_columns, columns=list(seq))
