@@ -4,6 +4,8 @@
 
 scanRBP loads RNA-binding protein (RBP) motif position weight matrices (PWMs) and computes log-odds binding scores for every loaded RBP across a given nucleotide sequence, then draws a heatmap of the scores.
 
+No installation needed: you can try scanRBP online, right in your browser, via [expressRNA.org](https://www.expressrna.org) &mdash; go to **Analyses &rarr; New Analysis &rarr; scanRBP Analysis**.
+
 The scores can be described as follows ([biopython docs](http://biopython.org/DIST/docs/tutorial/Tutorial.html)):
 
 > Here we can see positive values for symbols more frequent in the motif than in the background and negative for symbols more frequent in the background. 0.0 means that it's equally likely to see a symbol in the background and in the motif.
@@ -43,6 +45,9 @@ Super quick example:
 * [Google docs](https://docs.google.com/document/d/1ejfayohzaKnLZfdyfINtEBLm4IacJBHxfC5eqSa1QLc/edit?usp=sharing) of the above PDF (comment if you like)
 
 ### Change log
+
+**Online**: September 2026
+* scanRBP is now available to try online, no installation required, as an analysis type in [expressRNA](https://www.expressrna.org)
 
 **v0.3**: February 2025
 * scan code speed-up using numpy
