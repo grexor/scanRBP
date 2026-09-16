@@ -1,7 +1,8 @@
-<picture><img src="media/scanRBP_logo.png" height="30"/></picture>
+<picture><img src="media/scanRBP_logo.png" height="30" alt="scanRBP"/></picture>
+
 ### What is scanRBP?
 
-scanRBP loads RNA-protein binding motif PWM and computes the log-odds scores for all the loaded RBPs across a given genomic sequence + draws a heatmap of the scores.
+scanRBP loads RNA-binding protein (RBP) motif position weight matrices (PWMs) and computes log-odds binding scores for every loaded RBP across a given nucleotide sequence, then draws a heatmap of the scores.
 
 The scores can be described as follows ([biopython docs](http://biopython.org/DIST/docs/tutorial/Tutorial.html)):
 
@@ -17,17 +18,22 @@ The easiest way to install scanRBP is to simply run:
 
 `$ pip install scanRBP`
 
+On first use, scanRBP automatically downloads its PWM database (mCross eCLIP + CISBP-RNA, ~6 MB) to `~/scanRBP_data`. To store it somewhere else instead:
+
+`$ scanRBP config /path/to/data_folder`
+
 ### Quick Start
 
 Super quick example:
 
 ```
-# taking a random sequence, will produce binding scores and a heatmap
-# output: example1_PWM.tab # file with log-odds vectors for all proteins for the given command line sequence
-# output: example1.png/pdf # heatmap image with clustering of protein binding vectors
+# taking a sequence given directly on the command line, will produce binding scores and a heatmap
+# output: example1.tab.gz  # log-odds score matrix (proteins x positions) for the given sequence
+# output: example1.png/pdf # heatmap image with hierarchical clustering of protein binding vectors
 ./scanRBP AAAGCGGCGACTTATTATATCCCCATATATTATATCTTCTTCTCTTATATATAAACCAGAGATAGATGTGTGTGGTGG example1 -heatmap example1
 
-# instead of taking one single sequence, the input can be a fasta file with multiple sequences
+# instead of a single sequence, the input can be a FASTA file with multiple sequences
+# (one heatmap/matrix is produced per sequence, named after its FASTA id)
 ./scanRBP data.fasta
 ```
 
@@ -39,19 +45,18 @@ Super quick example:
 ### Change log
 
 **v0.3**: February 2025
-* scan code speedup using numpy
+* scan code speed-up using numpy
 
 **v0.2**: June 2024
-* new: loading of BED files with peaks from *CLIP experiments, example from [Encode Project](https://www.encodeproject.org)
-* integrated PWMs from [CIS-BP](https://cisbp.ccbr.utoronto.ca) and [mCrossBase](https://zhanglab.c2b2.columbia.edu/mCrossBase)
+* new: score against real binding sites from CLIP-family experiments (eCLIP, iCLIP, etc.) via a BED/bedGraph peak file, as an alternative to PWM-based scoring — example dataset from the [ENCODE Project](https://www.encodeproject.org)
 
 **v0.1.7**: November 2023
-* added mCross and CISBP-RNA motifs
+* added mCross (eCLIP-derived) and CISBP-RNA motif PWMs
 
 ### Citation
 
-If you are using scanRBP in your research, please cite:
+scanRBP is developed and distributed as part of the [splicekit](https://github.com/grexor/splicekit) toolkit. If you use scanRBP in your research, please cite the splicekit paper:
 
 Rot, G., Wehling, A., Schmucki, R., Berntenis, N., Zhang, J. D., & Ebeling, M. (2024)<br>
-[splicekit : an integrative toolkit for splicing analysis from short-read RNA-seq](https://academic.oup.com/bioinformaticsadvances/article/4/1/vbae121/7735317)<br>
+[splicekit: an integrative toolkit for splicing analysis from short-read RNA-seq](https://academic.oup.com/bioinformaticsadvances/article/4/1/vbae121/7735317)<br>
 Bioinformatics Advances, 4(1). https://doi.org/10.1093/bioadv/vbae121
