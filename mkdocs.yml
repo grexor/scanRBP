@@ -1,0 +1,56 @@
+site_name: scanRBP
+site_description: scanRBP - RNA-protein binding toolkit
+site_url: https://grexor.github.io/scanRBP/
+repo_url: https://github.com/grexor/scanRBP
+repo_name: grexor/scanRBP
+docs_dir: docs/pages
+site_dir: docs/site
+
+theme:
+  name: material
+  logo: assets/scanRBP_logo.png
+  favicon: assets/scanRBP_logo.png
+  palette:
+    # "custom" + extra_css below, rather than a built-in named color, so the
+    # header/accent can be the exact brand blue (#3c78d7) instead of whichever
+    # named material swatch happens to be closest.
+    - scheme: default
+      primary: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Quick Start: quickstart.md
+  - Guides:
+      - Motif database & search: motifs.md
+      - Scoring sequences: scoring.md
+      - CLIP-based scoring: clip.md
+      - Python API: python-api.md
+  - Reference:
+      - Command-line reference: cli.md
+      - Dependencies: dependencies.md
+  - About: about.md
