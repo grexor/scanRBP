@@ -1,6 +1,6 @@
 # scanRBP: RNA-protein binding toolkit
 
-![scanRBP](assets/scanRBP_logo.png)
+<img src="assets/scanRBP_logo.png" alt="scanRBP" style="height:60px; width:auto;">
 
 **scanRBP** scores how strongly RNA-binding proteins (RBPs) are predicted to bind along a nucleotide sequence, using a database of pre-trained position weight matrices (PWMs), and draws the result as a heatmap.
 

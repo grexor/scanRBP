@@ -41,10 +41,14 @@ Super quick example:
 
 ### Documentation
 
-* [PDF reference manual](https://github.com/grexor/scanRBP/raw/main/docs/scanRBP_docs.pdf)
-* [Google docs](https://docs.google.com/document/d/1ejfayohzaKnLZfdyfINtEBLm4IacJBHxfC5eqSa1QLc/edit?usp=sharing) of the above PDF (comment if you like)
+Full documentation, including installation, a quick start guide, and reference pages for the motif database, scoring options, CLIP-based scoring, the Python API and the command line, is available at:
+
+* [grexor.github.io/scanRBP](https://grexor.github.io/scanRBP/)
 
 ### Change log
+
+**Docs**: September 2026
+* migrated documentation to a mkdocs-material site ([grexor.github.io/scanRBP](https://grexor.github.io/scanRBP/)), retiring the PDF/Google Docs manual
 
 **Online**: September 2026
 * scanRBP is now available to try online, no installation required, as an analysis type in [expressRNA](https://www.expressrna.org)
